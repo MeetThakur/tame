@@ -1,56 +1,106 @@
-# Welcome to your Expo app 👋
+# Tame
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+> *"Set it aside. Come back when ready."*
 
-## Get started
+**Tame** (from the Japanese ため, meaning "for later") is a minimalist React Native (Expo) link organizer app. It lets you capture links and thoughts from any source (Instagram Reels, YouTube videos, articles, and plain notes) via the native Android share sheet, automatically enriches them with Open Graph metadata and oEmbed APIs, and uses Gemini 2.5 Flash to automatically summarize, tag, and organize them into folders.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## ✨ Features
 
-2. Start the app
+- **Native Android Share Sheet Target**: Seamless quick-save from Instagram, YouTube, Chrome, etc., using `expo-share-intent`.
+- **Background Metadata Scraper**: Parses Open Graph tags for articles/reels, and calls YouTube's oEmbed endpoint to resolve video details.
+- **AI-Powered Enrichment**: Employs Google Gemini 2.5 Flash to generate one-sentence summaries, categorize into folders, and create semantic tags.
+- **Japanese Stationery Aesthetic**: Minimal dark-first UI built around lots of negative space, sharp borders, structured typography (`DM Sans`, `Inter`, and `JetBrains Mono`), and a single memorable acid-green accent (`#C8F560`).
+- **Interactive Gestures**: Swipe right to toggle favorite, swipe left to delete with smooth, native 60fps haptics.
+- **"Surprise Me" Selector**: Shake up decision paralysis by surfacing a random unread item from your stash.
+- **Local-First & Offline**: Instant performance powered by `react-native-mmkv` and `Zustand`.
 
-   ```bash
-   npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+## 🛠️ Tech Stack
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- **Core**: React Native & Expo SDK 57 (TypeScript)
+- **Navigation**: Expo Router (File-based routing)
+- **State Management**: Zustand
+- **Storage**: MMKV (via `react-native-mmkv`)
+- **Rendering**: Shopify FlashList (performance-optimized list renderer)
+- **AI**: Gemini 2.5 Flash API (Direct integration with JSON Schema mode)
+- **Icons**: Lucide React Native
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
+## 🚀 Setup & Installation
 
-When you're ready, run:
+### Prerequisites
 
+- Node.js (v20 or newer recommended)
+- A physical Android device with **USB Debugging enabled** (connected to your dev computer via ADB). *Note: The Android emulator is not recommended due to system resource constraints.*
+
+### 1. Install Dependencies
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2. Configure Gemini API Key
+To utilize AI tagging and summarization:
+1. Obtain a free API key from [Google AI Studio](https://aistudio.google.com/).
+2. Run the application (see step 3).
+3. Navigate to **Settings** (top-right cog icon on the home screen).
+4. Enter your key under **Gemini Integration**. The key is persisted locally in MMKV as `gemini_api_key` and is never transmitted to external servers except for direct API calls.
 
-### Other setup steps
+### 3. Build & Run (Physical Device)
+Since Tame relies on native Android Intent Filters (`expo-share-intent`), you **cannot use Expo Go**. You must compile a development client.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Generate the native `android` project structure:
+```bash
+npx expo prebuild --clean
+```
 
-## Learn more
+Compile and install the application directly onto your connected device:
+```bash
+npx expo run:android --device
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Start the Metro bundler:
+```bash
+npm run start
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+---
 
-## Join the community
+## 💾 Data Model
 
-Join our community of developers creating universal apps.
+Each item is represented by the following TypeScript schema:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```typescript
+type TameItem = {
+  id: string;                  // Unique random identifier
+  url: string;                 // Extracted URL (empty string for notes)
+  type: 'reel' | 'video' | 'article' | 'note';
+  title: string | null;        // Title (scraped or user-edited)
+  thumbnailUrl: string | null; // Thumbnail image URL
+  rawNoteText: string | null;  // User-added notes or raw text
+  aiSummary: string | null;    // One-sentence summary from Gemini
+  aiTags: string[];            // Categorized tags array
+  folder: string | null;       // Suggested folder name
+  isFavorite: boolean;         // Favorite status flag
+  isRead: boolean;             // Read/unread status flag
+  savedAt: number;             // Epoch millisecond timestamp
+  status: 'pending' | 'enriched' | 'failed';
+};
+```
+
+---
+
+## 🏗️ CI Build Workflow
+
+A GitHub Actions pipeline is configured at `.github/workflows/build.yml` to automatically build and package your APK on push events:
+
+```yaml
+name: Build APK
+on:
+  push:
+    branches: [main]
+```
+To run the cloud build, push your code and configure `EXPO_TOKEN` in your repository secrets.
