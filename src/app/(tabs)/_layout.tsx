@@ -1,11 +1,13 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { View, StyleSheet } from 'react-native';
-import { Home, Search, FolderClosed, Settings } from 'lucide-react-native';
+import { Home, Search, FolderClosed } from 'lucide-react-native';
 import { useThemeColors } from '../../styles/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
   const colors = useThemeColors();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -16,9 +18,13 @@ export default function TabLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 64,
+          height: 60 + insets.bottom,
           elevation: 0,
           shadowOpacity: 0,
+        },
+        tabBarItemStyle: {
+          height: 60,
+          paddingBottom: insets.bottom > 0 ? 4 : 0,
         },
       }}
     >

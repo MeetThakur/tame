@@ -1,19 +1,6 @@
 import { create } from 'zustand';
-import { persist, StateStorage, createJSONStorage } from 'zustand/middleware';
-const storage = new (require('react-native-mmkv').MMKV)();
-
-const mmkvStorage: StateStorage = {
-  setItem: (name, value) => {
-    storage.set(name, value);
-  },
-  getItem: (name) => {
-    const value = storage.getString(name);
-    return value ?? null;
-  },
-  removeItem: (name) => {
-    storage.delete(name);
-  },
-};
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type TameItem = {
   id: string;
@@ -53,7 +40,7 @@ export const useTameStore = create<TameState>()(
   persist(
     (set) => ({
       items: [],
-      geminiApiKey: storage.getString('gemini_api_key') || '',
+      geminiApiKey: '',
       theme: 'dark',
       addItem: (itemData) => {
         const id = generateId();
@@ -96,7 +83,6 @@ export const useTameStore = create<TameState>()(
         }));
       },
       setGeminiApiKey: (key) => {
-        storage.set('gemini_api_key', key);
         set({ geminiApiKey: key });
       },
       setTheme: (theme) => {
@@ -108,7 +94,7 @@ export const useTameStore = create<TameState>()(
     }),
     {
       name: 'tame-storage',
-      storage: createJSONStorage(() => mmkvStorage),
+      storage: createJSONStorage(() => AsyncStorage),
     }
   )
 );

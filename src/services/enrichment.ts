@@ -44,10 +44,16 @@ export async function fetchHtmlMetadata(url: string): Promise<EnrichmentResult> 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout for scrapers
 
+    // Use a social crawler User-Agent for Instagram to bypass login gates and retrieve Open Graph previews
+    const isInstagram = url.includes('instagram.com');
+    const userAgent = isInstagram
+      ? 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_voiced_ostg.php)'
+      : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 TameLinkScraper/1.0';
+
     const response = await fetch(url, {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 TameLinkScraper/1.0',
+        'User-Agent': userAgent,
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
       },
