@@ -116,20 +116,7 @@ export default function HomeScreen() {
 
   const listData = getListData();
 
-  // "Surprise me" logic: opens a random unread item from currently filtered items
-  const handleSurpriseMe = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const unreadItems = filteredItems.filter((item) => !item.isRead);
-    
-    if (unreadItems.length === 0) {
-      Alert.alert('All Caught Up', 'You have no unread items matching your active filters.');
-      return;
-    }
 
-    const randomIndex = Math.floor(Math.random() * unreadItems.length);
-    const randomItem = unreadItems[randomIndex];
-    router.push(`/item/${randomItem.id}`);
-  };
 
   const handleManualAdd = () => {
     const text = inputText.trim();
@@ -204,10 +191,6 @@ export default function HomeScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Custom Header */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity style={styles.headerButton} onPress={handleSurpriseMe} activeOpacity={0.7}>
-          <Sparkles size={20} color={colors.accent} />
-        </TouchableOpacity>
-
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Tame</Text>
 
         <View style={styles.headerRight}>

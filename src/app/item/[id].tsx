@@ -31,6 +31,7 @@ import {
 import { Image } from 'expo-image';
 import { useTameStore } from '../../store/useTameStore';
 import { useThemeColors, SPACING, TYPOGRAPHY, LAYOUT } from '../../styles/theme';
+import { ConfirmationModal } from '../../components/ConfirmationModal';
 
 export default function ItemDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -48,6 +49,7 @@ export default function ItemDetailScreen() {
   const [folder, setFolder] = useState('');
   const [tagsString, setTagsString] = useState('');
   const [noteText, setNoteText] = useState('');
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 
   // Sync state with item on mount/load
   useEffect(() => {
@@ -100,18 +102,8 @@ export default function ItemDetailScreen() {
   };
 
   const handleDelete = () => {
-    Alert.alert('Delete stash item', 'Are you sure you want to delete this item permanently?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-          deleteItem(item.id);
-          router.back();
-        },
-      },
-    ]);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    setDeleteModalVisible(true);
   };
 
   const handleOpenLink = async () => {
@@ -332,6 +324,21 @@ export default function ItemDetailScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      
+      <ConfirmationModal
+        visible={deleteModalVisible}
+        title="Delete Stash"
+        message="Are you sure you want to remove this item from your stash? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        isDestructive
+        onConfirm={() => {
+          setDeleteModalVisible(false);
+          deleteItem(item.id);
+          router.back();
+        }}
+        onCancel={() => setDeleteModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
-  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
@@ -14,6 +13,7 @@ import * as Haptics from 'expo-haptics';
 import { Heart, Trash2, Film, Video, FileText, Clipboard } from 'lucide-react-native';
 import { TameItem, useTameStore } from '../store/useTameStore';
 import { useThemeColors, SPACING, TYPOGRAPHY, LAYOUT } from '../styles/theme';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface MasonryCardProps {
   item: TameItem;
@@ -72,6 +72,8 @@ export function MasonryCard({ item, index }: MasonryCardProps) {
     }
   };
 
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+
   const handleFavoritePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     toggleFavorite(item.id);
@@ -79,18 +81,7 @@ export function MasonryCard({ item, index }: MasonryCardProps) {
 
   const handleDeletePress = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    Alert.alert(
-      'Delete Item',
-      'Are you sure you want to remove this item from your stash?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => deleteItem(item.id),
-        },
-      ]
-    );
+    setDeleteModalVisible(true);
   };
 
   const hasThumbnail = !!item.thumbnailUrl;
@@ -204,6 +195,20 @@ export function MasonryCard({ item, index }: MasonryCardProps) {
           </TouchableOpacity>
         </View>
       </View>
+
+      <ConfirmationModal
+        visible={deleteModalVisible}
+        title="Delete Stash"
+        message="Are you sure you want to remove this item from your stash? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        isDestructive
+        onConfirm={() => {
+          setDeleteModalVisible(false);
+          deleteItem(item.id);
+        }}
+        onCancel={() => setDeleteModalVisible(false)}
+      />
     </Animated.View>
   );
 }
