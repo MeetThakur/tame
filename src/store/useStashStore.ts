@@ -5,7 +5,7 @@ import * as Crypto from 'expo-crypto';
 export type StashItem = {
   id: string;
   url: string;
-  type: 'reel' | 'video' | 'article' | 'note';
+  type: 'reel' | 'video' | 'article' | 'note' | 'music';
   title: string | null;
   thumbnailUrl: string | null;
   rawNoteText: string | null;
@@ -44,7 +44,7 @@ export const useStashStore = create<StashState>()(
   persist(
     (set) => ({
       items: [],
-      folders: [],
+      folders: ['Starred'],
       geminiApiKey: '',
       theme: 'dark',
       addItem: (itemData) => {

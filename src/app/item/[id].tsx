@@ -10,8 +10,12 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
+import * as Clipboard from 'expo-clipboard';
+import Toast from 'react-native-toast-message';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -27,7 +31,9 @@ import {
   Film,
   Video,
   FileText,
-  Clipboard,
+  Clipboard as ClipboardIcon,
+  Music,
+  Copy,
 } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { useStashStore } from '../../store/useStashStore';
@@ -40,6 +46,7 @@ export default function ItemDetailScreen() {
   const colors = useThemeColors();
 
   const items = useStashStore((state) => state.items);
+  const folders = useStashStore((state) => state.folders);
   const updateItem = useStashStore((state) => state.updateItem);
   const deleteItem = useStashStore((state) => state.deleteItem);
 
@@ -51,6 +58,7 @@ export default function ItemDetailScreen() {
   const [tagsString, setTagsString] = useState('');
   const [noteText, setNoteText] = useState('');
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [folderDropdownVisible, setFolderDropdownVisible] = useState(false);
 
   // Sync state with item on mount/load
   useEffect(() => {
@@ -97,11 +105,6 @@ export default function ItemDetailScreen() {
     updateItem(item.id, { isFavorite: !item.isFavorite });
   };
 
-  const handleReadToggle = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    updateItem(item.id, { isRead: !item.isRead });
-  };
-
   const handleDelete = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     setDeleteModalVisible(true);
@@ -127,7 +130,16 @@ export default function ItemDetailScreen() {
       console.error('Failed to open link:', err);
     }
   };
-
+  const handleCopyLink = async () => {
+    if (!item.url) return;
+    await Clipboard.setStringAsync(item.url);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Toast.show({
+      type: 'success',
+      text1: 'Link Copied',
+      text2: 'The URL has been copied to your clipboard.',
+    });
+  };
   const renderCover = () => {
     if (item.thumbnailUrl) {
       return (
@@ -146,7 +158,8 @@ export default function ItemDetailScreen() {
         {item.type === 'reel' && <Film size={48} color={colors.textSecondary} />}
         {item.type === 'video' && <Video size={48} color={colors.textSecondary} />}
         {item.type === 'article' && <FileText size={48} color={colors.textSecondary} />}
-        {item.type === 'note' && <Clipboard size={48} color={colors.textSecondary} />}
+        {item.type === 'note' && <ClipboardIcon size={48} color={colors.textSecondary} />}
+        {item.type === 'music' && <Music size={48} color={colors.textSecondary} />}
       </View>
     );
   };
@@ -164,15 +177,6 @@ export default function ItemDetailScreen() {
           </TouchableOpacity>
 
           <View style={styles.headerActions}>
-            {/* Mark as Read */}
-            <TouchableOpacity style={styles.iconButton} onPress={handleReadToggle} activeOpacity={0.7}>
-              <CheckCircle
-                size={20}
-                color={item.isRead ? colors.accent : colors.textSecondary}
-                fill={item.isRead ? colors.accent + '22' : 'none'}
-              />
-            </TouchableOpacity>
-
             {/* Favorite */}
             <TouchableOpacity style={styles.iconButton} onPress={handleFavoriteToggle} activeOpacity={0.7}>
               <Heart
@@ -221,16 +225,27 @@ export default function ItemDetailScreen() {
             </View>
           ) : null}
 
-          {/* Open Link Button (CTA) */}
+          {/* Action Buttons (Open / Copy) */}
           {item.url ? (
-            <TouchableOpacity
-              style={[styles.openLinkBtn, { backgroundColor: colors.accent }]}
-              onPress={handleOpenLink}
-              activeOpacity={0.8}
-            >
-              <ExternalLink size={16} color="#0E0E0E" style={{ marginRight: 8 }} />
-              <Text style={[styles.openLinkBtnText, { color: '#0E0E0E' }]}>Open original link</Text>
-            </TouchableOpacity>
+            <View style={styles.actionButtonsRow}>
+              <TouchableOpacity
+                style={[styles.openLinkBtn, { backgroundColor: colors.accent, flex: 1, marginRight: 8 }]}
+                onPress={handleOpenLink}
+                activeOpacity={0.8}
+              >
+                <ExternalLink size={16} color="#0E0E0E" style={{ marginRight: 8 }} />
+                <Text style={[styles.openLinkBtnText, { color: '#0E0E0E' }]}>Open Link</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.openLinkBtn, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, flex: 1, marginLeft: 8 }]}
+                onPress={handleCopyLink}
+                activeOpacity={0.8}
+              >
+                <Copy size={16} color={colors.textPrimary} style={{ marginRight: 8 }} />
+                <Text style={[styles.openLinkBtnText, { color: colors.textPrimary }]}>Copy Link</Text>
+              </TouchableOpacity>
+            </View>
           ) : null}
 
           {/* Divider */}
@@ -285,24 +300,22 @@ export default function ItemDetailScreen() {
               <FolderClosed size={14} color={colors.textSecondary} />
               <Text style={[styles.label, { color: colors.textSecondary }]}>Folder</Text>
             </View>
-            <TextInput
-              value={folder}
-              onChangeText={(val) => {
-                setFolder(val);
-                handleSaveEdits('folder', val);
-              }}
-              placeholder="Uncategorized"
-              placeholderTextColor={colors.textSecondary}
+            <TouchableOpacity
+              activeOpacity={0.7}
               style={[
                 styles.textInput,
                 {
                   backgroundColor: colors.surface,
                   borderColor: colors.border,
-                  color: colors.textPrimary,
+                  justifyContent: 'center',
                 },
               ]}
-              autoCapitalize="words"
-            />
+              onPress={() => setFolderDropdownVisible(true)}
+            >
+              <Text style={{ color: folder ? colors.textPrimary : colors.textSecondary }}>
+                {folder || 'Uncategorized'}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Editable Tags */}
@@ -348,6 +361,49 @@ export default function ItemDetailScreen() {
         }}
         onCancel={() => setDeleteModalVisible(false)}
       />
+
+      {/* Folder Selection Dropdown Modal */}
+      <Modal
+        visible={folderDropdownVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFolderDropdownVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setFolderDropdownVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={[styles.dropdownContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.dropdownTitle, { color: colors.textPrimary }]}>Select Folder</Text>
+                <ScrollView style={{ maxHeight: 300 }}>
+                  <TouchableOpacity
+                    style={[styles.dropdownItem, { borderBottomColor: colors.border }]}
+                    onPress={() => {
+                      setFolder('');
+                      handleSaveEdits('folder', '');
+                      setFolderDropdownVisible(false);
+                    }}
+                  >
+                    <Text style={{ color: !folder ? colors.accent : colors.textPrimary }}>Uncategorized</Text>
+                  </TouchableOpacity>
+                  {folders.map((fName) => (
+                    <TouchableOpacity
+                      key={fName}
+                      style={[styles.dropdownItem, { borderBottomColor: colors.border }]}
+                      onPress={() => {
+                        setFolder(fName);
+                        handleSaveEdits('folder', fName);
+                        setFolderDropdownVisible(false);
+                      }}
+                    >
+                      <Text style={{ color: folder === fName ? colors.accent : colors.textPrimary }}>{fName}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -419,13 +475,17 @@ const styles = StyleSheet.create({
     fontFamily: 'JetBrainsMono_500Medium',
     fontSize: 12,
   },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
   openLinkBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: LAYOUT.borderRadius,
     paddingVertical: 14,
-    marginBottom: 24,
   },
   openLinkBtnText: {
     fontSize: 15,
@@ -482,5 +542,30 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     minHeight: 100,
     textAlignVertical: 'top',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  dropdownContainer: {
+    width: '100%',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 10,
+  },
+  dropdownTitle: {
+    ...TYPOGRAPHY.headingSm,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+  },
+  dropdownItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
   },
 });

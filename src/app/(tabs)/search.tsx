@@ -73,6 +73,7 @@ export default function SearchScreen() {
           Videos: 'video',
           Articles: 'article',
           Notes: 'note',
+          Music: 'music',
         };
         matchesType = item.type === typeMap[selectedType];
       }
@@ -158,7 +159,7 @@ export default function SearchScreen() {
     setAiResponse(null);
   };
 
-  const typeFilters = ['All', 'Reels', 'Videos', 'Articles', 'Notes'];
+  const typeFilters = ['All', 'Reels', 'Videos', 'Articles', 'Notes', 'Music'];
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>

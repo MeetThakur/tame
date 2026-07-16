@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -30,6 +30,7 @@ import {
   Video,
   FileText,
   Folder,
+  Music,
 } from 'lucide-react-native';
 import { useStashStore, StashItem } from '../../store/useStashStore';
 import { LinkCard } from '../../components/LinkCard';
@@ -55,11 +56,16 @@ export default function HomeScreen() {
   const folders = useStashStore((state) => state.folders);
   const addItem = useStashStore((state) => state.addItem);
 
+  // Ensure default Starred folder exists
+  useEffect(() => {
+    if (!folders.includes('Starred')) {
+      useStashStore.getState().createFolder('Starred');
+    }
+  }, []);
+
   // Layout & Filter States
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
-  const [selectedType, setSelectedType] = useState<'all' | 'note' | 'article' | 'video' | 'reel'>('all');
-  const [filterFavorite, setFilterFavorite] = useState(false);
-  const [filterUnread, setFilterUnread] = useState(false);
+  const [selectedType, setSelectedType] = useState<'all' | 'note' | 'article' | 'video' | 'reel' | 'music'>('all');
 
   // Manual Add Modal State
   const [modalVisible, setModalVisible] = useState(false);
@@ -70,12 +76,6 @@ export default function HomeScreen() {
   // Filter Items
   const filteredItems = items.filter((item) => {
     if (selectedType !== 'all' && item.type !== selectedType) {
-      return false;
-    }
-    if (filterFavorite && !item.isFavorite) {
-      return false;
-    }
-    if (filterUnread && item.isRead) {
       return false;
     }
     return true;
@@ -126,31 +126,38 @@ export default function HomeScreen() {
     const text = inputText.trim();
     if (!text) return;
 
-    let type: 'reel' | 'video' | 'article' | 'note' = 'note';
-    let url = '';
+    let type: 'reel' | 'video' | 'article' | 'note' | 'music' = 'note';
+    let url = isUrl ? text : '';
     let title = 'Loading content...';
-    let rawNoteText: string | null = null;
+    let rawNoteText: string | null = isUrl ? null : text;
 
     if (isUrl) {
-      url = text;
-      if (url.includes('instagram.com') && (url.includes('/reel/') || url.includes('/p/'))) {
+      if (
+        (url.includes('instagram.com') && (url.includes('/reel/') || url.includes('/p/') || url.includes('/reels/'))) ||
+        url.includes('tiktok.com') ||
+        url.includes('youtube.com/shorts') ||
+        url.includes('youtu.be/shorts')
+      ) {
         type = 'reel';
-        title = 'Instagram Reel';
-      } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      } else if (
+        url.includes('youtube.com') ||
+        url.includes('youtu.be') ||
+        url.includes('vimeo.com') ||
+        url.includes('twitch.tv')
+      ) {
         type = 'video';
-        title = 'YouTube Video';
+      } else if (
+        url.includes('spotify.com') ||
+        url.includes('music.apple.com') ||
+        url.includes('soundcloud.com') ||
+        url.includes('tidal.com')
+      ) {
+        type = 'music';
       } else {
         type = 'article';
-        try {
-          const domain = new URL(url).hostname.replace('www.', '');
-          title = domain.charAt(0).toUpperCase() + domain.slice(1);
-        } catch {
-          title = 'Web Article';
-        }
       }
     } else {
       type = 'note';
-      rawNoteText = text;
       const firstLine = text.split('\n')[0].trim();
       title = firstLine.length > 45 ? firstLine.substring(0, 42) + '...' : firstLine || 'Plain Note';
     }
@@ -184,7 +191,7 @@ export default function HomeScreen() {
     });
   };
 
-  const renderTypeIcon = (type: 'note' | 'article' | 'video' | 'reel', size = 12, color = colors.textSecondary) => {
+  const renderTypeIcon = (type: 'note' | 'article' | 'video' | 'reel' | 'music', size = 12, color = colors.textSecondary) => {
     switch (type) {
       case 'reel':
         return <Film size={size} color={color} />;
@@ -194,6 +201,10 @@ export default function HomeScreen() {
         return <FileText size={size} color={color} />;
       case 'note':
         return <Clipboard size={size} color={color} />;
+      case 'music':
+        return <Music size={size} color={color} />;
+      default:
+        return null;
     }
   };
 
@@ -236,7 +247,7 @@ export default function HomeScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterTypesScroll}
         >
-          {(['all', 'note', 'article', 'video', 'reel'] as const).map((type) => {
+          {(['all', 'note', 'article', 'video', 'reel', 'music'] as const).map((type) => {
             const isSelected = selectedType === type;
             return (
               <TouchableOpacity
@@ -271,58 +282,6 @@ export default function HomeScreen() {
             );
           })}
         </ScrollView>
-
-        {/* Secondary Status Filter Row */}
-        <View style={styles.filterStatusRow}>
-          <TouchableOpacity
-            style={[
-              styles.statusChip,
-              {
-                backgroundColor: filterFavorite ? colors.surfaceRaised : 'transparent',
-                borderColor: filterFavorite ? colors.accent : colors.border,
-              },
-            ]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setFilterFavorite(!filterFavorite);
-            }}
-            activeOpacity={0.8}
-          >
-            <Heart
-              size={12}
-              color={filterFavorite ? colors.accent : colors.textSecondary}
-              fill={filterFavorite ? colors.accent : 'none'}
-            />
-            <Text style={[styles.statusChipText, { color: filterFavorite ? colors.accent : colors.textSecondary }]}>
-              Starred
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.statusChip,
-              {
-                backgroundColor: filterUnread ? colors.surfaceRaised : 'transparent',
-                borderColor: filterUnread ? colors.accent : colors.border,
-              },
-            ]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setFilterUnread(!filterUnread);
-            }}
-            activeOpacity={0.8}
-          >
-            <View
-              style={[
-                styles.unreadIndicator,
-                { backgroundColor: filterUnread ? colors.accent : colors.textSecondary },
-              ]}
-            />
-            <Text style={[styles.statusChipText, { color: filterUnread ? colors.accent : colors.textSecondary }]}>
-              Unread
-            </Text>
-          </TouchableOpacity>
-        </View>
       </View>
 
       {/* Main List / Grid / Empty State */}
@@ -576,11 +535,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'DMSans_500Medium',
     fontWeight: '500',
-  },
-  unreadIndicator: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
   },
   sectionHeader: {
     ...TYPOGRAPHY.meta,

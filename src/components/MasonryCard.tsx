@@ -10,7 +10,7 @@ import {
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Heart, Trash2, Film, Video, FileText, Clipboard } from 'lucide-react-native';
+import { Heart, Trash2, Film, Video, FileText, Clipboard, Music } from 'lucide-react-native';
 import { StashItem, useStashStore } from '../store/useStashStore';
 import { useThemeColors, SPACING, TYPOGRAPHY, LAYOUT } from '../styles/theme';
 import { ConfirmationModal } from './ConfirmationModal';
@@ -69,6 +69,8 @@ export function MasonryCard({ item, index }: MasonryCardProps) {
         return <FileText size={size} color={color} />;
       case 'note':
         return <Clipboard size={size} color={color} />;
+      case 'music':
+        return <Music size={size} color={color} />;
     }
   };
 

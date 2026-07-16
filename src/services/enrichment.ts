@@ -45,8 +45,8 @@ export async function fetchHtmlMetadata(url: string): Promise<EnrichmentResult> 
     const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout for scrapers
 
     // Use a social crawler User-Agent for Instagram to bypass login gates and retrieve Open Graph previews
-    const isInstagram = url.includes('instagram.com');
-    const userAgent = isInstagram
+    const isInstagramOrTikTok = url.includes('instagram.com') || url.includes('tiktok.com');
+    const userAgent = isInstagramOrTikTok
       ? 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_voiced_ostg.php)'
       : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 TameLinkScraper/1.0';
 
@@ -97,7 +97,7 @@ export async function fetchHtmlMetadata(url: string): Promise<EnrichmentResult> 
   }
 }
 
-export async function enrichLink(url: string, type: 'reel' | 'video' | 'article' | 'note'): Promise<EnrichmentResult> {
+export async function enrichLink(url: string, type: 'reel' | 'video' | 'article' | 'note' | 'music'): Promise<EnrichmentResult> {
   if (type === 'note') {
     return { title: 'Note', thumbnailUrl: null, description: null };
   }
@@ -112,11 +112,11 @@ export async function enrichLink(url: string, type: 'reel' | 'video' | 'article'
   const meta = await fetchHtmlMetadata(url);
   
   if (type === 'reel' && !meta.title) {
-    // Graceful fallback for Instagram reels if blocked or scraped unsuccessfully
+    // Graceful fallback for Instagram reels / TikToks if blocked or scraped unsuccessfully
     return {
-      title: 'Instagram Reel',
+      title: 'Short-form Video',
       thumbnailUrl: null,
-      description: 'Shared from Instagram',
+      description: 'Shared Reel/Short',
     };
   }
 

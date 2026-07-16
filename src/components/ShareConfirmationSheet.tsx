@@ -13,7 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Film, Video, FileText, Clipboard, Check, Loader2 } from 'lucide-react-native';
+import { Film, Video, FileText, Clipboard, Check, Loader2, Music } from 'lucide-react-native';
 import { useStashStore } from '../store/useStashStore';
 import { processItemEnrichment } from '../services/coordinator';
 import { useThemeColors, SPACING, TYPOGRAPHY, LAYOUT } from '../styles/theme';
@@ -34,7 +34,7 @@ export function ShareConfirmationSheet({ sharedValue, onDismiss }: ShareConfirma
   const [itemId, setItemId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [note, setNote] = useState('');
-  const [type, setType] = useState<'reel' | 'video' | 'article' | 'note'>('note');
+  const [type, setType] = useState<'reel' | 'video' | 'article' | 'note' | 'music'>('note');
   const [url, setUrl] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
@@ -43,25 +43,41 @@ export function ShareConfirmationSheet({ sharedValue, onDismiss }: ShareConfirma
     if (!sharedValue) return;
 
     const match = sharedValue.match(URL_REGEX);
-    let itemUrl = '';
-    let itemType: 'reel' | 'video' | 'article' | 'note' = 'note';
+    let itemUrl = match ? match[1] : '';
+    let itemType: 'reel' | 'video' | 'article' | 'note' | 'music' = 'note';
     let defaultTitle = '';
     let extractedNoteText = '';
 
-    if (match) {
-      itemUrl = match[1];
-      // Clean up notes or captions around the URL if present
+    if (itemUrl) {
       extractedNoteText = sharedValue.replace(itemUrl, '').trim();
       
-      if (itemUrl.includes('instagram.com') && (itemUrl.includes('/reel/') || itemUrl.includes('/p/') || itemUrl.includes('/reels/'))) {
+      // Very basic heuristic
+      if (
+        (itemUrl.includes('instagram.com') && (itemUrl.includes('/reel/') || itemUrl.includes('/p/') || itemUrl.includes('/reels/'))) ||
+        itemUrl.includes('tiktok.com') ||
+        itemUrl.includes('youtube.com/shorts') ||
+        itemUrl.includes('youtu.be/shorts')
+      ) {
         itemType = 'reel';
-        defaultTitle = 'Instagram Reel';
-      } else if (itemUrl.includes('youtube.com') || itemUrl.includes('youtu.be')) {
+        defaultTitle = 'Short-form Video';
+      } else if (
+        itemUrl.includes('youtube.com') ||
+        itemUrl.includes('youtu.be') ||
+        itemUrl.includes('vimeo.com') ||
+        itemUrl.includes('twitch.tv')
+      ) {
         itemType = 'video';
-        defaultTitle = 'YouTube Video';
+        defaultTitle = 'Video';
+      } else if (
+        itemUrl.includes('spotify.com') ||
+        itemUrl.includes('music.apple.com') ||
+        itemUrl.includes('soundcloud.com') ||
+        itemUrl.includes('tidal.com')
+      ) {
+        itemType = 'music';
+        defaultTitle = 'Music';
       } else {
         itemType = 'article';
-        // Extract domain as a fallback title
         try {
           const domain = new URL(itemUrl).hostname.replace('www.', '');
           defaultTitle = domain.charAt(0).toUpperCase() + domain.slice(1);
@@ -163,9 +179,10 @@ export function ShareConfirmationSheet({ sharedValue, onDismiss }: ShareConfirma
         return <FileText size={iconSize} color={iconColor} />;
       case 'note':
         return <Clipboard size={iconSize} color={iconColor} />;
+      case 'music':
+        return <Music size={iconSize} color={iconColor} />;
     }
   };
-
   return (
     <Modal visible={true} transparent animationType="slide" onRequestClose={handleCancel}>
       <TouchableWithoutFeedback onPress={handleCancel}>

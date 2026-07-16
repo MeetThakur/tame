@@ -11,7 +11,7 @@ import {
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Film, Video, FileText, Clipboard, Heart, Trash2 } from 'lucide-react-native';
+import { Film, Video, FileText, Clipboard, Heart, Trash2, Music } from 'lucide-react-native';
 import { StashItem, useStashStore } from '../store/useStashStore';
 import { useThemeColors, SPACING, TYPOGRAPHY, LAYOUT } from '../styles/theme';
 
@@ -140,6 +140,8 @@ export function LinkCard({ item, index }: LinkCardProps) {
         return <FileText size={size} color={color} />;
       case 'note':
         return <Clipboard size={size} color={color} />;
+      case 'music':
+        return <Music size={size} color={color} />;
     }
   };
 
@@ -153,6 +155,8 @@ export function LinkCard({ item, index }: LinkCardProps) {
         return 'Article';
       case 'note':
         return 'Note';
+      case 'music':
+        return 'Music';
     }
   };
 
